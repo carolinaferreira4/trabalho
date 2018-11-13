@@ -56,14 +56,14 @@ int main(int argv[], int argc){
         strcpy(info.fullText[j], "  ");
     }
 
+    pthread_create(&login, NULL, &clientLogin, NULL);
+    
     //PROCESSA COMANDOS
     while(1) {
-        printf("\n\nComando: ");
+        printf("\nComando: ");
         scanf("%[^\n]", command);
 
         clearStdin();
-
-        pthread_create(&login, NULL, &clientLogin, NULL);
 
         //GUARDA COMO TOKEN TUDO O QUE ESTIVER ANTES DO " "
         token = strtok(command, " ");
@@ -150,7 +150,6 @@ void *clientLogin (void* info) {
                 fflush(stdout);
             }
             else {
-
                 answer = verifyClient(c);
                 write(fd_answer, &answer, sizeof(answer));
                 close(fd_answer);
@@ -169,11 +168,11 @@ int verifyClient(Client c) {
     
     while(it != NULL) {
       if(strcmp(it->username,c.username) == 0)
-        return -1;
+        return 1;
       
       it = it->p;
     }
-    return 1;
+    return -1;
   }
 }
 /* ALTERAR
