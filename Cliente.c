@@ -21,9 +21,14 @@ Cliente para o Servidor:
 
 
 int main(int argv[], int argc){
-  int fd;
+  int fd, fp;
+  int asw;
+  char fifo[50];
   Client c;
-
+  
+  sprintf(fifo,"../JJJ%d", getpid());
+  mkfifo(fifo, 0660);
+  
   fd = open(FIFOLOGIN, O_WRONLY);
   if(fd == -1)
   {
@@ -33,8 +38,21 @@ int main(int argv[], int argc){
   printf("Nome: ");
   scanf("%[^\n]", c.username);
   c.PID = getpid();
-
+  printf("%s - %d", c.username, c.PID);
+  
   write(fd, &c, sizeof(c));
+  
+  fp = open(fifo, O_RDONLY);
+  
+  read(fp, &asw, sizeof(asw));
+  
+  if(asw == 1)
+  {
+      printf("ENTROU");
+  } else {
+      printf("SAIU");
+  }
+  
   close(fd);
 }
 
