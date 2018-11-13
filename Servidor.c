@@ -62,7 +62,6 @@ int main(int argv[], int argc){
     while(1) {
         printf("\nComando: ");
         scanf("%[^\n]", command);
-
         clearStdin();
 
         //GUARDA COMO TOKEN TUDO O QUE ESTIVER ANTES DO " "
