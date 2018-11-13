@@ -55,11 +55,12 @@ int main(int argv[], int argc){
     for(j = 0; j < info.maxLines; j++) {
         strcpy(info.fullText[j], "  ");
     }
-    
+
     pthread_create(&login, NULL, &clientLogin, NULL);
+    
     //PROCESSA COMANDOS
     while(1) {
-        printf("\n\nComando: ");
+        printf("\nComando: ");
         scanf("%[^\n]", command);
         clearStdin();
 
@@ -148,7 +149,6 @@ void *clientLogin (void* info) {
                 fflush(stdout);
             }
             else {
-
                 answer = verifyClient(c);
                 write(fd_answer, &answer, sizeof(answer));
                 close(fd_answer);
