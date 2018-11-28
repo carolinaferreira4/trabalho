@@ -9,19 +9,19 @@ CND_DISTDIR=dist
 # Debug configuration
 CND_PLATFORM_Debug=GNU-Linux
 CND_ARTIFACT_DIR_Debug=dist/Debug/GNU-Linux
-CND_ARTIFACT_NAME_Debug=notebook
-CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux/notebook
+CND_ARTIFACT_NAME_Debug=trabalho
+CND_ARTIFACT_PATH_Debug=dist/Debug/GNU-Linux/trabalho
 CND_PACKAGE_DIR_Debug=dist/Debug/GNU-Linux/package
-CND_PACKAGE_NAME_Debug=notebook.tar
-CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux/package/notebook.tar
+CND_PACKAGE_NAME_Debug=trabalho.tar
+CND_PACKAGE_PATH_Debug=dist/Debug/GNU-Linux/package/trabalho.tar
 # Release configuration
 CND_PLATFORM_Release=GNU-Linux
 CND_ARTIFACT_DIR_Release=dist/Release/GNU-Linux
-CND_ARTIFACT_NAME_Release=notebook
-CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux/notebook
+CND_ARTIFACT_NAME_Release=trabalho
+CND_ARTIFACT_PATH_Release=dist/Release/GNU-Linux/trabalho
 CND_PACKAGE_DIR_Release=dist/Release/GNU-Linux/package
-CND_PACKAGE_NAME_Release=notebook.tar
-CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux/package/notebook.tar
+CND_PACKAGE_NAME_Release=trabalho.tar
+CND_PACKAGE_PATH_Release=dist/Release/GNU-Linux/package/trabalho.tar
 #
 # include compiler specific variables
 #
