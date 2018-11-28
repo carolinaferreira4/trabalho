@@ -6,34 +6,30 @@
 extern "C" {
 #endif
     
-#define FIFOLOGIN "../CCC"
+#define FIFOLOGIN "ssslogin"
+#define FIFOCLI "ccc%d"
+    
 
 typedef struct {
     char username [8];
     int PID;
 } Client;
 
-typedef struct _t{
+typedef struct lC{
     char username [8];
     int PID;
-    struct _t* p;
+    struct lC* next;
 } lClient;
 
 typedef struct {
-    int* nLine ;
-    int PID ;
+    char* nLine;
+    Client c;
 } Line;
-
-/*
-typedef struct {
-    char* phrase ;
-} Text;
-*/
 
 typedef struct {
     int maxColumns;
     int maxLines;
-    char** fullText;
+    Line* fullText;
 } Info;
 
 

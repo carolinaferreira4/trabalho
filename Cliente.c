@@ -26,7 +26,7 @@ int main(int argv[], int argc){
   char fifo[50];
   Client c;
   
-  sprintf(fifo,"../JJJ%d", getpid());
+  sprintf(fifo,FIFOCLI, getpid());
   mkfifo(fifo, 0660);
   
   fd = open(FIFOLOGIN, O_WRONLY);

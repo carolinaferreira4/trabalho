@@ -20,6 +20,7 @@ void settings();
 void *clientLogin (void* info);
 int verifyClient(Client c);
 void *correctingPhrases (void* info);
+void getInfoFromTXT();
 
 int main(int argv[], int argc){
     char command[50], line[100], text;
@@ -30,11 +31,13 @@ int main(int argv[], int argc){
     FILE *fd;
     Info info;
     //??? inf;
+    
+    getInfoFromTXT();
 
     //VARIAVEIS DO AMBIENTE
     const char* lin = getenv("MEDIT_MAXLINES");
     const char* col = getenv("MEDIT_MAXCOLUMNS");
-
+    
     if(lin == NULL)
         info.maxLines = 15;
     else
@@ -44,16 +47,16 @@ int main(int argv[], int argc){
         info.maxColumns = 45;
     else
         info.maxColumns = atoi(col);
-
+    
     //VETOR DE LINHAS COM PONTEIROS A APONTAR CADA FRASE DE CADA LINHA
-    info.fullText = (char**)malloc(sizeof(char*) * info.maxLines);
-
+    info.fullText = (Line*)malloc(sizeof(Line) * info.maxLines);
+    
     for(j = 0; j < info.maxLines; j++) {
-        info.fullText[j] = (char*)malloc(sizeof(char*) * info.maxColumns);
+        info.fullText[j].nLine = (char*)malloc(sizeof(char) * info.maxColumns);
     }
 
     for(j = 0; j < info.maxLines; j++) {
-        strcpy(info.fullText[j], "  ");
+        strcpy(info.fullText[j].nLine, " ");
     }
 
     pthread_create(&login, NULL, &clientLogin, NULL);
@@ -84,7 +87,7 @@ int main(int argv[], int argc){
                 while(fread(line, 1, sizeof(line), fd) > 0) {                   //LE A LINHA DE TEXTO DO FICHEIRO
                     printf("%s\n", line);
                     printf("\nLoad efectuado com sucesso.");
-                    strcpy(info.fullText[i], line);                             //COPIA A LINHA PARA A VARIAVEL FULL TEXT
+                    strcpy(info.fullText[i].nLine, line);                             //COPIA A LINHA PARA A VARIAVEL FULL TEXT
                     i++;
 
                 }
@@ -95,7 +98,7 @@ int main(int argv[], int argc){
                 token = strtok(NULL, " ");
 
                 for(j = 0; j < info.maxLines; j++) {
-                    printf("%s\n", info.fullText[j]);
+                    printf("%s\n", info.fullText[j].nLine);
                 }
                 continue;
             }
@@ -140,7 +143,7 @@ void *clientLogin (void* info) {
 
     while(sair == 0) {
         if((read(fd, &c, sizeof(c))) == sizeof(c)) {
-            sprintf(str, "../JJJ%d", c.PID);
+            sprintf(str, FIFOCLI, c.PID);
             printf("Nome: %s\n",c.username);
 
             fd_answer = open(str, O_WRONLY);
@@ -169,36 +172,40 @@ int verifyClient(Client c) {
       if(strcmp(it->username,c.username) == 0)
         return 1;
       
-      it = it->p;
+      it = it->next;
     }
     return -1;
   }
 }
-/* ALTERAR
-void *correctingPhrases (void* info) {
-    char str[80];
-    int fd, fd_answer, answer;
-    Client c;
 
-    mkfifo (FIFOLOGIN, 0660);
 
-    fd = open(FIFOLOGIN, O_RDWR);
-
-    while(sair == 0) {
-        if((read(fd, &c, sizeof(c))) == sizeof(c)) {
-            sprintf(str, "../JJJ%d", c.PID);
-
-            fd_answer = open(str, O_WRONLY);
-            if(fd_answer == -1) {
-                printf("Erro %d\n", c.PID);
-                fflush(stdout);
-            }
-            else {
-                answer = verifyClient(c);
-                write(fd_answer, &answer, sizeof(answer));
-                close(fd_answer);
-            }
+void getInfoFromTXT() {
+    char name[8];
+    lClient* c;
+    FILE* f;
+    
+    f = fopen("username.txt", "r");
+    
+    if(f == NULL) {
+        printf("ERRO");
+        exit(0);
+    }
+    
+    while(fscanf(f, "%s", name) == 1) {
+        //GUARDA A INFORMAÇAO
+        c = (lClient*)malloc(sizeof(lClient));
+        strcpy(c->username, name);
+        c->PID = 0;
+        c->next = NULL;
+        
+        //PASSA PARA A LISTA LIGADA
+        if(lclients == NULL)
+            lclients = c;
+        else {
+            c->next = lclients;
+            lclients = c;
         }
     }
 }
-*/
+
+
