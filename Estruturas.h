@@ -22,9 +22,14 @@ typedef struct lC{
 } lClient;
 
 typedef struct {
-    char* nLine;
+    char nLine[45];
     Client c;
 } Line;
+
+typedef struct{
+    char letter;
+    int pid;
+}Letter;
 
 typedef struct {
     int maxColumns;

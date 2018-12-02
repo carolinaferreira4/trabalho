@@ -15,17 +15,22 @@ Cliente para o Servidor:
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
-//#include <ncurses.h>
+#include <ncurses.h>
 
 #include "Estruturas.h"
 
 
 int main(int argv[], int argc){
   int fd, fp;
-  int asw;
   char fifo[50];
   Client c;
-  
+  Line asw;
+  char tecla;
+  fd_set fontes;
+  int res;
+  struct timeval tempo;
+  int nLine=0;
+    
   sprintf(fifo,FIFOCLI, getpid());
   mkfifo(fifo, 0660);
   
@@ -41,19 +46,71 @@ int main(int argv[], int argc){
   printf("%s - %d", c.username, c.PID);
   
   write(fd, &c, sizeof(c));
+  close(fd);
   
   fp = open(fifo, O_RDONLY);
   
-  read(fp, &asw, sizeof(asw));
+  /// NCURSES
+   WINDOW * mainwin;
+   
+    /*if ((mainwin = initscr()) == NULL) {
+        fprintf(stderr, "Error initialising ncurses.\n");
+        exit(EXIT_FAILURE);
+    }*/
+   noecho();
+   keypad(mainwin, TRUE);
+   curs_set(0);
+   start_color();
+   
+    init_pair(1, COLOR_WHITE, COLOR_BLACK);
+
   
-  if(asw == 1)
-  {
-      printf("ENTROU");
-  } else {
-      printf("SAIU");
-  }
+  do{
+      //MONITORIZA O STDIN E O FIFO
+	FD_ZERO(&fontes);
+	FD_SET(0, &fontes); 	//stdin
+	FD_SET(fp, &fontes);	//FIFO
+	tempo.tv_sec = 1;	//TIMEOUT
+	tempo.tv_usec = 0;
+
+	//BLOQUEIA AQUI ATE MUDAR ALGO NA MONITORIZAÇAO - select()
+	res = select(fp + 1, &fontes, NULL, NULL, &tempo);
+
+	if(res == 0) {
+	    printf("Nao houve dados ao fim do timeout de um segundo");
+	    fflush(stdout);
+	} else if(FD_ISSET(0, &fontes)) {	//HA DADOS NO TECLADO
+            clear();
+            refresh();
+            scanf("%c", &tecla);
+            if(tecla == 'w'){
+                if((nLine-1) >= 0){
+                    nLine--;
+                }
+            } else{
+                if(tecla == 's'){
+                    nLine++;
+                }
+            }
+              attron(COLOR_PAIR(9));
+              mvprintw(60, nLine, "<-");
+	} else if(FD_ISSET(fp, &fontes)) { 	//HA DADOS NO FIFO
+            read(fp, &asw, sizeof(asw));
+            if(asw.c.PID == -2)
+            {
+                printf("SAIU");
+                break;
+            } else {
+                printf("%s", asw.nLine);
+            }
+         }
+      
+  } while(1);
   
-  close(fd);
+    delwin(mainwin);
+    endwin();
+    refresh();
+  close(fp);
 }
 
 
