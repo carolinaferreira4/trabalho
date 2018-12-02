@@ -14,23 +14,27 @@
 
 int sair = 0;
 lClient * lclients;
+Info info;
 
 void clearStdin();
 void settings();
-void *clientLogin (void* info);
-int verifyClient(Client c);
-void *correctingPhrases (void* info);
 void getInfoFromTXT();
+void* clientLogin (void* info);
+int verifyClient(Client c);
+void* clientRequest (void* info);
+int verifyLine(Request r);
+void* correctingPhrases (void* info);
+
 
 int main(int argv[], int argc){
-    char command[50], line[100], text;
+    char command[50], line[100], text, str[50];
     char* token;
     char* phrase;
-    pthread_t login;
-    int i = 1, j;
-    FILE *fd;
+    pthread_t login, request;
+    int i = 1, j, fd;
+    FILE *f;
     Info info;
-    //??? inf;
+    Message mess;
     
     getInfoFromTXT();
 
@@ -48,18 +52,20 @@ int main(int argv[], int argc){
     else
         info.maxColumns = atoi(col);
     
-    //VETOR DE LINHAS COM PONTEIROS A APONTAR CADA FRASE DE CADA LINHA
+    //VETOR DE LINHAS COM PONTEIROS PARA CADA FRASE DE CADA LINHA
     info.fullText = (Line*)malloc(sizeof(Line) * info.maxLines);
     
     for(j = 0; j < info.maxLines; j++) {
-        info.fullText[j].nLine = (char*)malloc(sizeof(char) * info.maxColumns);
+        info.fullText[j].fullLine = (char*)malloc(sizeof(char) * info.maxColumns);
     }
 
     for(j = 0; j < info.maxLines; j++) {
-        strcpy(info.fullText[j].nLine, " ");
+        strcpy(info.fullText[j].fullLine, " ");
+        info.fullText[j].c.PID = -1;
     }
 
     pthread_create(&login, NULL, &clientLogin, NULL);
+    pthread_create(&request, NULL, &clientRequest, NULL);
     
     //PROCESSA COMANDOS
     while(1) {
@@ -74,33 +80,46 @@ int main(int argv[], int argc){
         while(token!= NULL) {
             if(strcmp(token, "settings") == 0) {
                 settings();
+                
             } else if(strcmp(token, "load") == 0) {
                 token = strtok(NULL, " ");
 
-                fd = fopen(token, "r");
+                f = fopen(token, "r");
 
-                if(fd == NULL) {
+                if(f == NULL) {
                     printf("ERRO ao abrir ficheiro %s", token);
                     continue;
                 }
 
-                while(fread(line, 1, sizeof(line), fd) > 0) {                   //LE A LINHA DE TEXTO DO FICHEIRO
+                while(fread(line, 1, sizeof(line), f) > 0) {                   //LE A LINHA DE TEXTO DO FICHEIRO
                     printf("%s\n", line);
                     printf("\nLoad efectuado com sucesso.");
-                    strcpy(info.fullText[i].nLine, line);                             //COPIA A LINHA PARA A VARIAVEL FULL TEXT
+                    strcpy(info.fullText[i].fullLine, line);                             //COPIA A LINHA PARA A VARIAVEL FULL TEXT
                     i++;
 
                 }
 
-                fclose(fd);
+                fclose(f);
 
             } else if(strcmp(token, "text") == 0)  {
                 token = strtok(NULL, " ");
 
-                for(j = 0; j < info.maxLines; j++) {
-                    printf("%s\n", info.fullText[j].nLine);
-                }
+                for(j = 0; j < info.maxLines; j++) 
+                    printf("%s\n", info.fullText[j].fullLine);
+                
                 continue;
+                
+            } else if(strcmp(token, "shutdown") == 0)  {
+                token = strtok(NULL, " ");
+                
+                while(lclients!= NULL) {
+                    sprintf(str, FIFOCLI, lclients->PID);
+                    fd = open(str, O_WRONLY);
+                    mess.message = 0;
+                    write(fd, &mess, sizeof(mess));
+                    
+                    lclients = lclients->next;
+                }
             }
             token = strtok(NULL, " ");
         }
@@ -127,7 +146,36 @@ void settings() {
     //....
 }
 
-void *clientLogin (void* info) {
+void getInfoFromTXT() {
+    char name[8];
+    lClient* c;
+    FILE* f;
+    
+    f = fopen("username.txt", "r");
+    
+    if(f == NULL) {
+        printf("ERRO");
+        exit(0);
+    }
+    
+    while(fscanf(f, "%s", name) == 1) {
+        //GUARDA A INFORMAÇAO
+        c = (lClient*)malloc(sizeof(lClient));
+        strcpy(c->username, name);
+        c->PID = 0;
+        c->next = NULL;
+        
+        //PASSA PARA A LISTA LIGADA
+        if(lclients == NULL)
+            lclients = c;
+        else {
+            c->next = lclients;
+            lclients = c;
+        }
+    }
+}
+
+void* clientLogin (void* info) {
     char str[80];
     int fd, fd_answer, answer;
     Client c;
@@ -178,34 +226,56 @@ int verifyClient(Client c) {
   }
 }
 
+void* clientRequest (void* info) {
+    char str[80];
+    int fd, fd_answer, answer;
+    Request r;
 
-void getInfoFromTXT() {
-    char name[8];
-    lClient* c;
-    FILE* f;
+    mkfifo (FIFOREQUEST, 0660);
+
+    fd = open(FIFOREQUEST, O_RDWR);
     
-    f = fopen("username.txt", "r");
-    
-    if(f == NULL) {
-        printf("ERRO");
-        exit(0);
+    if(fd == -1) {
+      printf("Erro ao abrir o fifo");
+      fflush(stdout);
+      exit(1);
     }
-    
-    while(fscanf(f, "%s", name) == 1) {
-        //GUARDA A INFORMAÇAO
-        c = (lClient*)malloc(sizeof(lClient));
-        strcpy(c->username, name);
-        c->PID = 0;
-        c->next = NULL;
-        
-        //PASSA PARA A LISTA LIGADA
-        if(lclients == NULL)
-            lclients = c;
-        else {
-            c->next = lclients;
-            lclients = c;
+
+    while(sair == 0) {
+        if((read(fd, &r, sizeof(r))) == sizeof(r)) {
+            sprintf(str, FIFOCLI, r.PID);
+
+            fd_answer = open(str, O_WRONLY);
+            
+            if(fd_answer == -1) {
+                printf("ErroR %d\n", r.PID);
+                fflush(stdout);
+            }
+            else {
+                answer = verifyLine(r);
+                write(fd_answer, &answer, sizeof(answer));
+                close(fd_answer);
+            }
         }
     }
 }
+
+int verifyLine(Request r) {
+    int i;
+    
+    for(i=0; i<info.maxLines; ) {
+        if(i == r.line) {
+            if(info.fullText[i].c.PID == -1)
+                return 1;
+            else
+                return 0;
+        }
+        else
+            i++;
+    }
+}
+
+
+
 
 

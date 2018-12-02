@@ -1,10 +1,3 @@
-/*
-Cliente para o Servidor:
- -> Envia o nome de utilizador  -> nome & pid
- -> Envia a linha -> linha & pid
- -> Envia texto, caso possa escrever -> char frase[nº colunas máximas]
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,39 +14,60 @@ Cliente para o Servidor:
 
 
 int main(int argv[], int argc){
-  int fd, fp;
-  int asw;
-  char fifo[50];
-  Client c;
+    int fl, fp, fr;
+    int asw, answer;
+    char fifo[50];
+    Client c;
+    Request r;
+
+    sprintf(fifo,FIFOCLI, getpid());
+    mkfifo(fifo, 0660);
+
+    //LOGIN
+    fl = open(FIFOLOGIN, O_WRONLY);
+    if(fl == -1){
+      printf("Erro ao abrir fifo");
+      exit(1);
+    }
+    
+    printf("Nome: ");
+    scanf("%[^\n]", c.username);
+    c.PID = getpid();
+    printf("%s - %d\n", c.username, c.PID);
+
+    write(fl, &c, sizeof(c));
+
+    fp = open(fifo, O_RDONLY);
+    read(fp, &asw, sizeof(asw));
+
+    if(asw == 1) 
+        printf("Utilizador aceite");
+    else
+        printf("Utilizador nao existente na base de dados");
+
+    //REQUEST
+    fr = open(FIFOREQUEST, O_WRONLY);
+    if(fr == -1){
+      printf("Erro ao abrir fifo");
+      exit(1);
+    }
+    
+    printf("Linha a editar: ");
+    scanf("%[^\n]", r.line);
+    r.PID = getpid();
+    printf("%d - %d\n", r.line, r.PID);
+    
+    write(fr, &r, sizeof(r));
+    
+    read(fp, &answer, sizeof(answer));
+
+    if(answer == 1) 
+        printf("Ediçao possivel");
+    else
+        printf("Ja existe alguem a editar esta linha");
   
-  sprintf(fifo,FIFOCLI, getpid());
-  mkfifo(fifo, 0660);
-  
-  fd = open(FIFOLOGIN, O_WRONLY);
-  if(fd == -1)
-  {
-    printf("Erro ao abrir fifo");
-    exit(1);
-  }
-  printf("Nome: ");
-  scanf("%[^\n]", c.username);
-  c.PID = getpid();
-  printf("%s - %d", c.username, c.PID);
-  
-  write(fd, &c, sizeof(c));
-  
-  fp = open(fifo, O_RDONLY);
-  
-  read(fp, &asw, sizeof(asw));
-  
-  if(asw == 1)
-  {
-      printf("ENTROU");
-  } else {
-      printf("SAIU");
-  }
-  
-  close(fd);
+    close(fl);
+    close(fr);
 }
 
 

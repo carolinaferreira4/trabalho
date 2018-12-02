@@ -7,6 +7,7 @@ extern "C" {
 #endif
     
 #define FIFOLOGIN "ssslogin"
+#define FIFOREQUEST "sssrequest"
 #define FIFOCLI "ccc%d"
     
 
@@ -22,7 +23,11 @@ typedef struct lC{
 } lClient;
 
 typedef struct {
-    char* nLine;
+    int message;
+} Message;
+
+typedef struct {
+    char* fullLine;
     Client c;
 } Line;
 
@@ -31,6 +36,11 @@ typedef struct {
     int maxLines;
     Line* fullText;
 } Info;
+
+typedef struct {
+    int PID;
+    int line;
+} Request;
 
 
 
