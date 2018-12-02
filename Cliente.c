@@ -26,7 +26,7 @@ int main(int argv[], int argc){
     //LOGIN
     fl = open(FIFOLOGIN, O_WRONLY);
     if(fl == -1){
-      printf("Erro ao abrir fifo");
+      printf("Erro ao abrir fifo"); 
       exit(1);
     }
     

@@ -24,7 +24,7 @@ typedef struct lC{
 
 typedef struct {
     int message;
-} Message;
+} Message; 
 
 typedef struct {
     char* fullLine;

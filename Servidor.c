@@ -115,7 +115,7 @@ int main(int argv[], int argc){
                 while(lclients!= NULL) {
                     sprintf(str, FIFOCLI, lclients->PID);
                     fd = open(str, O_WRONLY);
-                    mess.message = 0;
+                    mess.message = 0; 
                     write(fd, &mess, sizeof(mess));
                     
                     lclients = lclients->next;
