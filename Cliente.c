@@ -8,14 +8,16 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
-//#include <ncurses.h>
+#include <ncurses.h>
 
 #include "Estruturas.h"
 
 
 int main(int argv[], int argc){
+
     int fl, fp, fr;
-    int asw, answer;
+    int answer;
+    Line asw;
     char fifo[50];
     Client c;
     Request r;
@@ -40,10 +42,14 @@ int main(int argv[], int argc){
     fp = open(fifo, O_RDONLY);
     read(fp, &asw, sizeof(asw));
 
-    if(asw == 1) 
-        printf("Utilizador aceite");
-    else
-        printf("Utilizador nao existente na base de dados");
+    read(fp, &asw, sizeof(asw));
+    if(asw.c.PID == -2)
+     {
+        printf("SAIU");
+        break;
+     } else {
+         printf("%s", asw.nLine);
+      }
 
     //REQUEST
     fr = open(FIFOREQUEST, O_WRONLY);
@@ -68,6 +74,7 @@ int main(int argv[], int argc){
   
     close(fl);
     close(fr);
+
 }
 
 

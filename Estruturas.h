@@ -31,6 +31,11 @@ typedef struct {
     Client c;
 } Line;
 
+typedef struct{
+    char letter;
+    int pid;
+}Letter;
+
 typedef struct {
     int maxColumns;
     int maxLines;
