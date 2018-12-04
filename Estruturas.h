@@ -27,7 +27,7 @@ typedef struct {
 } Message; 
 
 typedef struct {
-    char* fullLine;
+    char nLine[45];
     Client c;
 } Line;
 
