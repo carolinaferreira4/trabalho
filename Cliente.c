@@ -1,10 +1,3 @@
-/*
-Cliente para o Servidor:
- -> Envia o nome de utilizador  -> nome & pid
- -> Envia a linha -> linha & pid
- -> Envia texto, caso possa escrever -> char frase[nº colunas máximas]
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -21,97 +14,67 @@ Cliente para o Servidor:
 
 
 int main(int argv[], int argc){
-  int fd, fp;
-  char fifo[50];
-  Client c;
-  Line asw;
-  char tecla;
-  fd_set fontes;
-  int res;
-  struct timeval tempo;
-  int nLine=0;
+
+    int fl, fp, fr;
+    int answer;
+    Line asw;
+    char fifo[50];
+    Client c;
+    Request r;
+
+    sprintf(fifo,FIFOCLI, getpid());
+    mkfifo(fifo, 0660);
+
+    //LOGIN
+    fl = open(FIFOLOGIN, O_WRONLY);
+    if(fl == -1){
+      printf("Erro ao abrir fifo"); 
+      exit(1);
+    }
     
-  sprintf(fifo,FIFOCLI, getpid());
-  mkfifo(fifo, 0660);
-  
-  fd = open(FIFOLOGIN, O_WRONLY);
-  if(fd == -1)
-  {
-    printf("Erro ao abrir fifo");
-    exit(1);
-  }
-  printf("Nome: ");
-  scanf("%[^\n]", c.username);
-  c.PID = getpid();
-  printf("%s - %d", c.username, c.PID);
-  
-  write(fd, &c, sizeof(c));
-  close(fd);
-  
-  fp = open(fifo, O_RDONLY);
-  
-  /// NCURSES
-   WINDOW * mainwin;
-   
-    /*if ((mainwin = initscr()) == NULL) {
-        fprintf(stderr, "Error initialising ncurses.\n");
-        exit(EXIT_FAILURE);
-    }*/
-   noecho();
-   keypad(mainwin, TRUE);
-   curs_set(0);
-   start_color();
-   
-    init_pair(1, COLOR_WHITE, COLOR_BLACK);
+    printf("Nome: ");
+    scanf("%[^\n]", c.username);
+    c.PID = getpid();
+    printf("%s - %d\n", c.username, c.PID);
 
-  
-  do{
-      //MONITORIZA O STDIN E O FIFO
-	FD_ZERO(&fontes);
-	FD_SET(0, &fontes); 	//stdin
-	FD_SET(fp, &fontes);	//FIFO
-	tempo.tv_sec = 1;	//TIMEOUT
-	tempo.tv_usec = 0;
+    write(fl, &c, sizeof(c));
 
-	//BLOQUEIA AQUI ATE MUDAR ALGO NA MONITORIZAÇAO - select()
-	res = select(fp + 1, &fontes, NULL, NULL, &tempo);
+    fp = open(fifo, O_RDONLY);
+    read(fp, &asw, sizeof(asw));
 
-	if(res == 0) {
-	    printf("Nao houve dados ao fim do timeout de um segundo");
-	    fflush(stdout);
-	} else if(FD_ISSET(0, &fontes)) {	//HA DADOS NO TECLADO
-            clear();
-            refresh();
-            printf("OLA");
-            tecla = getch();
-            if(tecla == 'w'){
-                if((nLine-1) >= 0){
-                    nLine--;
-                }
-            } else{
-                if(tecla == 's'){
-                    nLine++;
-                }
-            }
-              attron(COLOR_PAIR(9));
-              mvprintw(60, nLine, "<-");
-	} else if(FD_ISSET(fp, &fontes)) { 	//HA DADOS NO FIFO
-            read(fp, &asw, sizeof(asw));
-            if(asw.c.PID == -2)
-            {
-                printf("SAIU");
-                break;
-            } else {
-                printf("%s", asw.nLine);
-            }
-         }
-      
-  } while(1);
+    read(fp, &asw, sizeof(asw));
+    if(asw.c.PID == -2)
+     {
+        printf("SAIU");
+        break;
+     } else {
+         printf("%s", asw.nLine);
+      }
+
+    //REQUEST
+    fr = open(FIFOREQUEST, O_WRONLY);
+    if(fr == -1){
+      printf("Erro ao abrir fifo");
+      exit(1);
+    }
+    
+    printf("Linha a editar: ");
+    scanf("%[^\n]", r.line);
+    r.PID = getpid();
+    printf("%d - %d\n", r.line, r.PID);
+    
+    write(fr, &r, sizeof(r));
+    
+    read(fp, &answer, sizeof(answer));
+
+    if(answer == 1) 
+        printf("Ediçao possivel");
+    else
+        printf("Ja existe alguem a editar esta linha");
   
-    delwin(mainwin);
-    endwin();
-    refresh();
-  close(fp);
+    close(fl);
+    close(fr);
+
 }
 
 
