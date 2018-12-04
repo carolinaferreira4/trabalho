@@ -187,6 +187,7 @@ void* clientLogin (void* info) {
 
     no_login.c.PID = -2;
     strcpy(no_login.nLine, "");
+    
     mkfifo (FIFOLOGIN, 0660);
 
     fd = open(FIFOLOGIN, O_RDWR);
@@ -198,19 +199,18 @@ void* clientLogin (void* info) {
 
     while(sair == 0) {
         if((read(fd, &c, sizeof(c))) == sizeof(c)) {
-            if(verifyClient(c) == 1)
-            {
+            if(verifyClient(c) == 1) {
                 sendLines(c.PID);
-                
-            } else {   
-               
+            } else {
                 sprintf(str, FIFOCLI, c.PID);
+                
                 fp = open(str, O_WRONLY);
                 if(fp == -1) {
                   printf("Erro ao abrir o fifo");
                   fflush(stdout);
                   exit(1);
                 }
+                
                 write(fp, &no_login, sizeof(no_login));
                 close(fd);
             }
@@ -219,23 +219,25 @@ void* clientLogin (void* info) {
 }
 
 int verifyClient(Client c) {
-  lClient *it;
+    lClient *it;
 
-  if(lclients == NULL) {
-      lclients = (lClient*) malloc(sizeof(lClient));
-  } else {
-    it = lclients;
-    
-    while(it != NULL) {
-      if(strcmp(it->username,c.username) == 0)
-        return 1;
-      
-      it = it->next;
+    if(lclients == NULL) {
+        lclients = (lClient*) malloc(sizeof(lClient));
+    } else {
+        it = lclients;
+
+        while(it != NULL) {
+          if(strcmp(it->username,c.username) == 0)
+            return 1;
+
+          it = it->next;
+        }
+
+        printf("TCHAU!!!");
+        fflush(stdout);
+
+        return -1;
     }
-    printf("TCHAU!!!");
-    fflush(stdout);
-    return -1;
-  }
 }
 
 void* clientRequest (void* info) {
@@ -246,14 +248,6 @@ void* clientRequest (void* info) {
     mkfifo (FIFOREQUEST, 0660);
 
     fd = open(FIFOREQUEST, O_RDWR);
-
-void getInfoFromTXT() {
-    char name[8];
-    lClient* c;
-    FILE* f;
-    
-    f = fopen("username.txt", "r");
-
     
     if(fd == -1) {
       printf("Erro ao abrir o fifo");
@@ -271,6 +265,7 @@ void getInfoFromTXT() {
                 printf("ErroR %d\n", r.PID);
                 fflush(stdout);
             }
+            
             else {
                 answer = verifyLine(r);
                 write(fd_answer, &answer, sizeof(answer));
@@ -295,11 +290,9 @@ int verifyLine(Request r) {
     }
 }
 
-void sendLines(int pid)
-{
-     char str[80];
+void sendLines(int pid) {
+    char str[80];
     int fd;
-    
     
     sprintf(str, FIFOCLI, pid);
     
@@ -311,9 +304,8 @@ void sendLines(int pid)
     }
 
     for(int i=0;i<info.maxColumns; i++)
-    {
         write(fd, &info.fullText[i], sizeof(Line));
-    }
+    
     close(fd);
 }
 
