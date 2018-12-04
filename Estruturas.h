@@ -42,6 +42,7 @@ typedef struct {
     Line* fullText;
 } Info;
 
+
 typedef struct {
     int PID;
     int line;

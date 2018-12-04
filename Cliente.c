@@ -12,52 +12,77 @@
 
 #include "Estruturas.h"
 
+typedef struct l{
+    
+    Line fullLine;
+    struct l *next;
+} Lines;
 
-void sentLogin(); 
-void sentRequest(); 
+Lines *lines;
+        
+int dealsLogin(); 
+void dealsRequest(); 
+int ReceiveInitialData();
+void clearStdin();
 
 int main(int argv[], int argc){
     
-    sentLogin();
-    sentRequest();
+    char fifo[50];
+    int temp;
+    lines = NULL;
+    WINDOW * mainwin;
+    
+    sprintf(fifo, FIFOCLI, getpid());
+    mkfifo(fifo, 0600);
+    
+    dealsLogin();
+    
+   /* if ((mainwin = initscr()) == NULL) {
+        fprintf(stderr, "Error initialising ncurses.\n");
+        exit(EXIT_FAILURE);
+    }*/
+    
+    /*noecho();
+    keypad(mainwin, TRUE);
+    curs_set(0);
+    start_color();*/
+    
+    
     
 }
 
-void sentLogin() {
+int dealsLogin() {
     int fd, fp;
-    int answer;
-    char fifo[50];
+    Line answer;
     Client c;
     
-    sprintf(fifo,FIFOCLI, getpid());
-    mkfifo(fifo, 0660);
-
-    //LOGIN
+    
     fd = open(FIFOLOGIN, O_WRONLY);
     if(fd == -1){
       printf("Erro ao abrir fifo"); 
       exit(1);
     }
     
-    printf("Nome: ");
-    scanf("%[^\n]", c.username);
-    c.PID = getpid();
-    printf("%s - %d\n", c.username, c.PID);
+    do{
+        printf("Nome: ");
+        scanf("%[^\n]", c.username);
+        clearStdin();
+        c.PID = getpid();
+        printf("%s - %d\n", c.username, c.PID);
 
-    write(fd, &c, sizeof(c));
+        write(fd, &c, sizeof(c));
 
-    fp = open(fifo, O_RDONLY);
-    read(fp, &answer, sizeof(answer));
 
-    if(answer == 1) 
-        printf("Utilizador aceite");
-    else
-        printf("Utilizador nao existente na base de dados");
-    
-    close(fd);
+        if(ReceiveInitialData() == 1){
+            close(fd);
+            break;
+        } else{
+            printf("Utilizador nao registado.\n");
+        }
+    }while(1);
 }
 
-void sentRequest() {
+void dealsRequest() {
     int fd, fp;
     int answer;
     char fifo[50];
@@ -70,14 +95,14 @@ void sentRequest() {
     }
     
     printf("Linha a editar: ");
-    scanf("%[^\n]", r.line);
+    scanf("%d", r.line);
     r.PID = getpid();
     printf("%d - %d\n", r.line, r.PID);
     
     write(fd, &r, sizeof(r));
     
     sprintf(fifo,FIFOCLI, getpid()); 
-    mkfifo(fifo, 0600);
+    
     
     fp = open(FIFOCLI, O_RDONLY);
     
@@ -90,4 +115,73 @@ void sentRequest() {
     close(fd);
 }
 
+int ReceiveInitialData()
+{
+    int fd;
+    char fifo[50];
+    Line answer;
+    Lines *end, *new;
+    
+    sprintf(fifo, FIFOCLI, getpid());
+    fd = open(fifo, O_RDWR);
+    if(fd == -1){
+      printf("Erro ao abrir fifo"); 
+      fflush(stdout);
+      exit(1);
+    }
 
+    do{
+        read(fd, &answer, sizeof(answer));
+
+        if(answer.c.PID == -2)
+        {
+            close(fd);
+            return -1;
+        }else {
+            if(answer.c.PID == -3)
+            {
+                close(fd);
+                return 1;
+            } else {
+                //COLOCA TODA A INFORMAÇAO DAS LINHAS NA LISTA LIGADA "LINES" PARA NCURSES SER POSSIVEL 
+                if(lines == NULL)                                                   //LISTA VAZIA
+                {
+                    lines = (Lines*) malloc(sizeof(Lines));
+                    strcpy(lines->fullLine.nLine, answer.nLine);
+                    lines->fullLine.c.PID = answer.c.PID;
+                    strcpy(lines->fullLine.c.username, answer.c.username);
+                    lines->next = NULL;
+                    end = lines;
+                } else {                                                            //ACRESCENTA
+                    new = (Lines*) malloc(sizeof(Lines));
+                    strcpy(new->fullLine.nLine, answer.nLine);
+                    new->fullLine.c.PID = answer.c.PID;
+                    strcpy(new->fullLine.c.username, answer.c.username);
+                    new->next = NULL;
+                    end->next = new;
+                    end = new;
+                }
+            }
+        }
+        
+    }while(1);
+}
+
+// IMPEDE O WHILE NA MAIN DE ENTRAR EM LOOP
+void clearStdin() {
+    int c;
+
+    do {
+        c = getchar();
+    } while(c!='\n' && c!= EOF);
+}
+
+void show()
+{
+    Lines *it = lines;
+    
+    /*while(it != NULL){
+        printf("%s\n",it->fullLine.nLine);
+        it = it->next;
+    }*/
+}

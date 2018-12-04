@@ -35,14 +35,7 @@ int main(int argv[], int argc){
     pthread_t login, request;
     int i = 1, j, fd;
     FILE *f;
-    Info info;
     Message mess;
-
-
-    lclients = (lClient*) malloc(sizeof(lClient));
-    lclients->next = NULL;
-    strcpy(lclients->username, "andre");
-
     
     getInfoFromTXT();
 
@@ -57,19 +50,21 @@ int main(int argv[], int argc){
 
     if(col == NULL)
         info.maxColumns = 45;
-    else
+    else{
         info.maxColumns = atoi(col);
-    
+    }
+    printf("Max Columns: %d\n", info.maxColumns);
     //VETOR DE LINHAS COM PONTEIROS PARA CADA FRASE DE CADA LINHA
     info.fullText = (Line*)malloc(sizeof(Line) * info.maxLines);
     
-    for(j = 0; j < info.maxLines; j++) {
-        strcpy(info.fullText[j].fullLine, " ");
+    for(j = 0; j < 15; j++) {
+        for(i=0; i<45; i++)
+            info.fullText[j].nLine[i] = ' ';
         info.fullText[j].c.PID = -1;
     }
 
     pthread_create(&login, NULL, &clientLogin, NULL);
-    pthread_create(&request, NULL, &clientRequest, NULL);
+    //pthread_create(&request, NULL, &clientRequest, NULL);
     
     //PROCESSA COMANDOS
     while(1) {
@@ -95,10 +90,10 @@ int main(int argv[], int argc){
                     continue;
                 }
 
-                while(fread(line, 1, sizeof(line), f) > 0) {                   //LE A LINHA DE TEXTO DO FICHEIRO
+                while(fread(line, 1, sizeof(line), f) > 0) {                    //LE A LINHA DE TEXTO DO FICHEIRO
                     printf("%s\n", line);
                     printf("\nLoad efectuado com sucesso.");
-                    strcpy(info.fullText[i].fullLine, line);                             //COPIA A LINHA PARA A VARIAVEL FULL TEXT
+                    strcpy(info.fullText[i].nLine, line);                    //COPIA A LINHA PARA A VARIAVEL FULL TEXT
                     i++;
 
                 }
@@ -109,7 +104,7 @@ int main(int argv[], int argc){
                 token = strtok(NULL, " ");
 
                 for(j = 0; j < info.maxLines; j++) 
-                    printf("%s\n", info.fullText[j].fullLine);
+                    printf("%s\n", info.fullText[j].nLine);
                 
                 continue;
                 
@@ -199,16 +194,20 @@ void* clientLogin (void* info) {
 
     while(sair == 0) {
         if((read(fd, &c, sizeof(c))) == sizeof(c)) {
+            printf("Nome: %s\n",c.username);
+            printf("PID: %d\n",c.PID);
+            
             if(verifyClient(c) == 1) {
+                printf("ENTROU\n\n");
                 sendLines(c.PID);
             } else {
-                sprintf(str, FIFOCLI, c.PID);
+                printf("SAIR\n\n");
                 
+                sprintf(str, FIFOCLI, c.PID);
                 fp = open(str, O_WRONLY);
                 if(fp == -1) {
                   printf("Erro ao abrir o fifo");
                   fflush(stdout);
-                  exit(1);
                 }
                 
                 write(fp, &no_login, sizeof(no_login));
@@ -255,7 +254,7 @@ void* clientRequest (void* info) {
       exit(1);
     }
 
-    while(sair == 0) {
+   /* while(sair == 0) {
         if((read(fd, &r, sizeof(r))) == sizeof(r)) {
             sprintf(str, FIFOCLI, r.PID);
 
@@ -272,7 +271,7 @@ void* clientRequest (void* info) {
                 close(fd_answer);
             }
         }
-    }
+    }*/
 }
 
 int verifyLine(Request r) {
@@ -293,18 +292,24 @@ int verifyLine(Request r) {
 void sendLines(int pid) {
     char str[80];
     int fd;
+    Line over;
     
     sprintf(str, FIFOCLI, pid);
-    
+
     fd = open(str, O_WRONLY);
     if(fd == -1) {
-      printf("Erro ao abrir o fifo");
+      printf("Erro ao abrir o fifo Cliente");
       fflush(stdout);
-      exit(1);
     }
 
-    for(int i=0;i<info.maxColumns; i++)
+    
+    for(int i=0;i<info.maxLines; i++)
+    {
         write(fd, &info.fullText[i], sizeof(Line));
+    }
+    
+    over.c.PID = -3;
+    write(fd, &over, sizeof(Line));
     
     close(fd);
 }
