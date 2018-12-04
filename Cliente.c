@@ -82,7 +82,8 @@ int main(int argv[], int argc){
 	} else if(FD_ISSET(0, &fontes)) {	//HA DADOS NO TECLADO
             clear();
             refresh();
-            scanf("%c", &tecla);
+            printf("OLA");
+            tecla = getch();
             if(tecla == 'w'){
                 if((nLine-1) >= 0){
                     nLine--;
